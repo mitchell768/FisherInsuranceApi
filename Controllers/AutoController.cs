@@ -31,11 +31,11 @@ public class AutoController : Controller
         return NoContent();
     }
 
-    //Delete api/auto/quotes/id
+    //Delete api/auto/quotes/
     [HttpDelete("{id}")]
     
-    public IActionResult Delete(int id)
+    public IActionResult Delete()
     {
-        return Delete(id);
+        return Delete();
     }
 }

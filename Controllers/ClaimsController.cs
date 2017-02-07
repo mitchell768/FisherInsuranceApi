@@ -31,11 +31,11 @@ public class ClaimsController : Controller
         return NoContent();
     }
 
-    //Delete api/claim/id
+    //Delete api/claim/
     [HttpDelete("{id}")]
     
-    public IActionResult Delete(int id)
+    public IActionResult Delete()
     {
-        return Delete(id);
+        return Delete();
     }
 }

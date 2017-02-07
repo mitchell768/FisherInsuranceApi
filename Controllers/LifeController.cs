@@ -31,11 +31,11 @@ public class LifeController : Controller
         return NoContent();
     }
 
-    //Delete api/life/quotes/id
+    //Delete api/life/quotes/
     [HttpDelete("{id}")]
     
-    public IActionResult Delete(int id)
+    public IActionResult Delete()
     {
-        return Delete(id);
+        return Delete();
     }
 }

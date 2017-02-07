@@ -31,11 +31,10 @@ public class HomeController : Controller
         return NoContent();
     }
 
-    //Delete api/home/quotes/id
-    [HttpDelete("{id}")]
+    //Delete api/home/quotes/    [HttpDelete("{id}")]
     
-    public IActionResult Delete(int id)
+    public IActionResult Delete()
     {
-        return Delete(id);
+        return Delete();
     }
 }
