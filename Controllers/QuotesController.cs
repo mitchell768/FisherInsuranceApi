@@ -6,48 +6,58 @@ using FisherInsuranceApi.Models;
 
 public class QuotesController : Controller
 {
-    private IMemoryStore db;
-    public QuotesController(IMemoryStore repo){
-        db = repo;
-    }
-
     //Post api/quotes
-
+    private readonly FisherContext db;
+    public QuotesController(FisherContext context){
+        db=context;
+    }
+    
     [HttpPost]
 
     public IActionResult Post([FromBody] Quote quote)
 
     {
-        return Ok(db.CreateQuote(quote));
-
+        var newQuote = db.Quotes.Add(quote);
+        db.SaveChanges();
+        return CreatedAtRoute("Get Claim", new {id = quote.Id, quote});
     }   
 
     //Get api/quotes
     [HttpGet]
     public IActionResult GetQuotes(){
-        return Ok(db.RetrieveAllQuotes);
+       return Ok(db.Quotes);
     }
+
     //Get api/auto/quotes/5
-    [HttpGet("{id}")]
-        public IActionResult Get (int id)
-    {
-        return Ok (db.RetrieveQuote(id));
+    [HttpGet("{id}", Name = "GetClaim")]
+        public IActionResult Get (int id){            
+        return Ok (db.Quotes.Find(id));
     }
 
     //PUT Api/quotes/id
     [HttpPut("{id}")]
-
-    public IActionResult Put ([FromBody]Quote quote)
+    public IActionResult Put (int id, [FromBody]Quote quote)
     {
-        return Ok(db.UpdateQuote(quote));
+        var newQuote = db.Quotes.Find(id);
+        if(newQuote == null){
+            return NotFound();
+        }
+        newQuote=quote;
+        db.Quotes.Update(newQuote);
+        db.SaveChanges();
+        return Ok(newQuote);       
     }
 
     //Delete api/quotes/
-    [HttpDelete("{id}")]
-    
+    [HttpDelete("{id}")]    
     public IActionResult Delete(int id)
     {
-        db.DeleteQuote(id);
-        return Ok();
+        var quoteToDelete = db.Quotes.Find(id);
+        if (quoteToDelete== null){
+            return NotFound();
+        }
+        db.Quotes.Remove(quoteToDelete);
+        db.SaveChangesAsync();
+        return NoContent();
     }
 }
