@@ -19,7 +19,7 @@ public class QuotesController : Controller
     {
         var newQuote = db.Quotes.Add(quote);
         db.SaveChanges();
-        return CreatedAtRoute("Get Quote", new {id = quote.Id, newQuote});
+        return CreatedAtRoute("Get Quote", new {id = quote.Id}, quote);
     }   
 
     //Get api/quotes
