@@ -19,7 +19,7 @@ public class QuotesController : Controller
     {
         var newQuote = db.Quotes.Add(quote);
         db.SaveChanges();
-        return CreatedAtRoute("Get Claim", new {id = quote.Id, quote});
+        return CreatedAtRoute("Get Quote", new {id = quote.Id, newQuote});
     }   
 
     //Get api/quotes
@@ -29,8 +29,8 @@ public class QuotesController : Controller
     }
 
     //Get api/auto/quotes/5
-    [HttpGet("{id}", Name = "GetClaim")]
-        public IActionResult Get (int id){            
+    [HttpGet("{id}", Name = "GetQuote")]
+    public IActionResult Get (int id){            
         return Ok (db.Quotes.Find(id));
     }
 
