@@ -8,7 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using FisherInsuranceApi.Data;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore; 
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using FisherInsuranceApi.Security;
 
 
 namespace FisherInsuranceApi
@@ -31,11 +33,13 @@ namespace FisherInsuranceApi
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-            services.AddIdentity<ApplicationUser, IdentityRole>(config => { 
-                config.User.RequireUniqueEmail = true; 
-                config.Password.RequireNonAlphanumeric = false; 
-                config.Cookies.ApplicationCookie.AutomaticChallenge = false; }) 
-            .AddEntityFrameworkStores<FisherContext>() 
+            services.AddIdentity<ApplicationUser, IdentityRole>(config =>
+            {
+                config.User.RequireUniqueEmail = true;
+                config.Password.RequireNonAlphanumeric = false;
+                config.Cookies.ApplicationCookie.AutomaticChallenge = false;
+            })
+            .AddEntityFrameworkStores<FisherContext>()
             .AddDefaultTokenProviders();
             services.AddDbContext<FisherContext>();
             services.AddMvc();
@@ -44,9 +48,33 @@ namespace FisherInsuranceApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
+
             app.UseDefaultFiles();
             app.UseStaticFiles();
 
+            //add our JwtProvider that we created
+            app.UseJwtProvider();
+            //add the built in authentication
+            app.UseJwtBearerAuthentication(new JwtBearerOptions()
+            {
+                AutomaticAuthenticate = true,
+                AutomaticChallenge = true,
+                RequireHttpsMetadata = false,
+                TokenValidationParameters = new TokenValidationParameters()
+                {
+                    IssuerSigningKey = JwtProvider.SecurityKey,
+                    ValidIssuer = JwtProvider.Issuer,
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                }
+            });
+            //if we wanted to support cookies, we do this:
+            //app.UseIdentity();
+            //or this
+            //app.UseCookieAuthentication();
             app.UseMvc();
         }
     }
