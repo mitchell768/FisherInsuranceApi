@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Collections.Generic;
 
 namespace FisherInsuranceApi.Security
 {
@@ -21,11 +21,14 @@ namespace FisherInsuranceApi.Security
         private FisherContext db;
         private UserManager<ApplicationUser> UserManager;
         private SignInManager<ApplicationUser> SignInManager;
+
         private static readonly string PrivateKey = "private_key_1234567890";
         public static readonly SymmetricSecurityKey SecurityKey =
                       new SymmetricSecurityKey(Encoding.ASCII.GetBytes(PrivateKey));
         public static readonly string Issuer = "FisherInsurance";
         public static string TokenEndPoint = "/api/connect/token";
+
+
         public JwtProvider(RequestDelegate next, FisherContext db, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
         {
             _next = next;
@@ -38,14 +41,17 @@ namespace FisherInsuranceApi.Security
             TokenExpiration = TimeSpan.FromMinutes(10);
             SigningCredentials =
                      new SigningCredentials(SecurityKey, SecurityAlgorithms.HmacSha256);
+
         }
+
         public Task Invoke(HttpContext httpContext)
         {
             if (!httpContext.Request.Path.Equals(TokenEndPoint, StringComparison.Ordinal))
             {
                 return _next(httpContext);
             }
-            if (!httpContext.Request.Method.Equals("POST") && httpContext.Request.HasFormContentType)
+
+            if (httpContext.Request.Method.Equals("POST") && httpContext.Request.HasFormContentType)
             {
                 return CreateToken(httpContext);
             }
@@ -55,6 +61,7 @@ namespace FisherInsuranceApi.Security
                 return httpContext.Response.WriteAsync("Bad Request.");
             }
         }
+
         private async Task CreateToken(HttpContext httpContext)
         {
             try
@@ -71,21 +78,32 @@ namespace FisherInsuranceApi.Security
                 {
                     user = await UserManager.FindByEmailAsync(username);
                 }
+
                 var success = user != null && await UserManager.CheckPasswordAsync(user, password);
                 if (success)
                 {
                     DateTime now = DateTime.UtcNow;
 
                     //create the claims about the user for the token
-                    var claims = new[]
+                    var claims = new List<Claim>()
                     {
                         new Claim(JwtRegisteredClaimNames.Iss, Issuer),
                         new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                         new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now)
-                        .ToUnixTimeSeconds()
-                        .ToString(), ClaimValueTypes.Integer64)
+                                                                    .ToUnixTimeSeconds()
+                                                                    .ToString(), ClaimValueTypes.Integer64),
+                        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                        new Claim(JwtRegisteredClaimNames.GivenName, user.UserName)
                     };
+
+                    var roles = await UserManager.GetRolesAsync(user);
+
+                    foreach (var role in roles)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+
 
                     //create the actual token
                     var token = new JwtSecurityToken(
@@ -93,6 +111,7 @@ namespace FisherInsuranceApi.Security
                         notBefore: now,
                         expires: now.Add(TokenExpiration),
                         signingCredentials: SigningCredentials);
+
                     var encodedToken = new JwtSecurityTokenHandler().WriteToken(token);
 
                     //create the response. This is an anonymous type; no need to create a special class to hold two props.
@@ -101,19 +120,26 @@ namespace FisherInsuranceApi.Security
                         access_token = encodedToken,
                         expiration = (int)TokenExpiration.TotalSeconds
                     };
+
                     httpContext.Response.ContentType = "application/json"; // this should look familiar
                     await httpContext.Response.WriteAsync(JsonConvert.SerializeObject(jwt));
+
                     return;
                 }
+
             }
             catch (Exception)
             {
                 throw;
             }
+
             //if we make it this far, we could not authenticate the user
             httpContext.Response.StatusCode = 400;
             await httpContext.Response.WriteAsync("Invalid username or password.");
+
         }
+
+
         public JwtProvider(RequestDelegate next)
         {
             _next = next;

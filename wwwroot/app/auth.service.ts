@@ -2,11 +2,11 @@ import {Injectable, EventEmitter} from "@angular/core";
 import {Http, Headers, Response, RequestOptions} from "@angular/http"; 
 import {Observable} from "rxjs/Observable"; 
 import {AuthHttp} from "./auth.http";
-
+import { JwtHelper } from "./jwt.helper";
 @Injectable() 
 export class AuthService { 
     authKey = "auth"; 
-    constructor(private http: AuthHttp) { 
+    constructor(private http: AuthHttp, private jwtHelper: JwtHelper) { 
     } 
     login(username: string, password: string): any { 
         var url = "api/connect/token";  // JwtProvider's LoginPath 
@@ -74,5 +74,12 @@ export class AuthService {
     // Returns TRUE if the user is logged in, FALSE otherwise. 
     isLoggedIn(): boolean { 
         return localStorage.getItem(this.authKey) != null; 
+    }
+        getToken(): any {
+        var token = localStorage.getItem(this.authKey);
+        console.log(
+            this.jwtHelper.decodeToken(token),
+            this.jwtHelper.getTokenExpirationDate(token)
+        )
     } 
-} 
+}
